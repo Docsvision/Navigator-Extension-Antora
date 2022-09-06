@@ -1,15 +1,112 @@
 = Antora Navigator Extension
-:url-repo: https://gitlab.com/opendevise/oss/antora-navigator-extension
+:url-repo: https://github.com/Docsvision/antora-navigator-extension
 
-An Antora extension that exports the navigation data to JavaScript so the navigation tree can be built in the browser.
+Форк расширения Antora с небольшими изменениями. Расширение экспортирующее навигационные данные в JavaScript, что позволяет строить дерево навигации в браузере.
 
-WARNING: This is alpha software!
-That means the extension is experimental and likely to change at any time without notice.
-You're free to test it and give feedback, but take caution when relying on it in a production site.
+WARNING: ПО в состоянии разработки!
+Расширение является экспериментальным и может быть изменено в любое время без предварительного уведомления.
+Вы можете протестировать данное ПО и предоставить обратную связь. Полагаться на расширение в производственной среде следует с осторожностью.
 
-== Copyright and License
+== Копирайт и лицензия
 
-Copyright (C) 2022-present by OpenDevise Inc. and the individual contributors of this project.
+Copyright (C) 2022-н.в. by OpenDevise Inc. и индивидуальные  the individual участники данного проекта.
 
-Use of this software is granted under the terms of the https://www.mozilla.org/en-US/MPL/2.0/[Mozilla Public License Version 2.0] (MPL-2.0).
-See link:LICENSE[] to find the full license text.
+Использование данного ПО предоставляется на условиях o https://www.mozilla.org/en-US/MPL/2.0/[Mozilla Public License версии 2.0] (MPL-2.0).
+См. полный текст лицензии по ссылке link:LICENSE[].
+
+== Настройка расширения Antora Navigator
+
+Расширение Antora Navigator позволяет создать навигационные группы компонентов Antora в меню. Группы компонентов Antora и их порядок можно задать в файле `antora-navigator.yml`.
+
+.antora-navigator.yml:
+[source,yaml]
+----
+groups:
+- root: true <.>
+components: home
+- title: Demo <.>
+components: 'component-*' <.>
+- title: Asciidoctor
+components: ['*', '!asciidoctorj'] <.>
+output_file: site-navigation-data.js <.>
+----
+<.> Регулирует наличие корневой группы, которая отображается в меню первой. По умолчанию это группа со ссылкой на главную страницу.
+<.> Название группы компонентов в формате glob pattern. Аналогичный формат используется link:https://docs.antora.org/antora/latest/playbook/content-source-version/#refname-projection-as-version[при указании версий в Antora playbook].
++
+Имя компонента -- строковое значение, необходимо указывать в кавычках.
++
+<.> Если необходимо указать несколько компонентов, возьмите диапазон компонентов в квадратные скобки. Разделяйте имена компонентов запятой. Аналогичные правила исключения и включения компонентов используются link:https://docs.antora.org/antora/latest/playbook/content-branches/#exclude-branches-by-pattern[при указании веток в Antora playbook].
+<.> Имя и расположение результирующего файла с данными навигации.
+
+== Требования к навигационным файлам в формате AsciiDoc
+
+Расширение Antora Navigator накладывает определённые условия на формат файла навигации для компонентов Antora. Требования перечислены ниже.
+
+=== Требования к первой строке навигации
+
+Первая запись в первом файле навигации для версии компонента должна выглядеть следующим образом:
+
+[source,asciidoc]
+----
+.xref:title.adoc[Title] <.>
+* xref:title.adoc[] <.>
+----
+<.> После сборки сайта значение в квадратных скобках окажется заголовком компонента в навигационном меню.
+<.> Заголовок файла или значение в квадратных скобках будет использоваться как заголовок первой страницы в навигационном меню компонента.
+
+Если формат не соответствует данному требованию, в навигационном меню будут пропущены все строки, не являющиеся ссылками.
+
+Подобный формат должен использоваться только один раз для каждого компонента. Например, если в файле `antora.yml` для компонента первым указан навигационный файл для модуля ROOT, требование относится только к данному файлу:
+
+.antora.yml
+[source,asciidoc]
+----
+nav:
+- modules/ROOT/nav.adoc
+----
+
+Использовать подобный формат строк навигации разрешается только один раз.
+
+Подобные заголовки не допускаются нигде, кроме первой строки данного навигационного файла (включая следующие строки).
+
+[source,asciidoc]
+----
+.Title
+* xref:title.adoc[]
+----
+
+Требование не распространяется на файлы навигации для последующих модулей.
+
+=== Требования ко второй и следующим строкам навигации
+
+Во втором и следующих файлах навигации версии компонента запрещается использовать заголовки вида:
+
+[source,asciidoc]
+----
+.Title
+* xref:title.adoc[]
+----
+
+В противном случае дерево навигации сайта будет отображаться как заголовки первого уровня.
+
+Чтобы получить заголовок второго уровня, вместо формата заголовков выше используйте пустой заголовок в пункте списка:
+
+[source,asciidoc]
+----
+* Title
+** xref:title.adoc[]
+----
+
+== Локализация элементов навигации
+
+Расширение по умолчанию использует следующие формулировки для элементов навигационного меню:
+
+* Название корневой группы в меню навигации. По умолчанию: На главную.
+* Подсказки для версий: Последняя версия, Предрелизные версии, Предыдущие версии.
+
+Локализовать или изменить эти значения можно link:{url-repo}/-/blob/main/data/js/nav.js[в файле nav.js].
+
+* На главную -- строки link:{url-repo}/-/blob/main/data/js/nav.js#L143[143] и link:{url-repo}/-/blob/main/data/js/nav.js#L144[144].
+* Последняя версия -- link:{url-repo}/-/blob/main/data/js/nav.js#L253[строка 253]
+* Предрелизные версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L255[строка 255]
+* Предыдущие версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L257[строка 257]

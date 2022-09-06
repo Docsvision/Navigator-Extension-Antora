@@ -107,8 +107,10 @@
       var groupComponents
       groupsAccum.push({
         iconId: groupIconId,
-        components: (groupComponents = Object.values(selectComponents(group.components, componentPool))),
+        components: (groupComponents = Object.values(
+          selectComponents(group.components, componentPool, group.exclude))),
         title: group.title,
+        spreadSingleItem: group.spreadSingleItem,
       })
       var component
       if (!groupComponents.length) {
@@ -120,8 +122,11 @@
           var iconId = it.url
             ? 'icon-nav-page' + it.url.replace(/(?:\.html|\/)$/, '').replace(/[/#]/g, '-')
             : 'icon-nav-page-' + component.name + '-' + it.content?.toLowerCase().replace(/ +/g, '-')
-          it.iconId = document.getElementById(iconId) ? iconId : 'icon-nav-component'
+          it.iconId = document.getElementById(iconId)
+            ? iconId : group.spreadSingleItem
+              ? 'icon-nav-component' : it.iconId
         })
+        if (group.homeTitle) component.title = group.homeTitle
       }
       return groupsAccum
     }, [])
@@ -140,16 +145,18 @@
     })
   }
 
-  function selectComponents (patterns, pool) {
+  function selectComponents (patterns, pool, exclude) {
     return coerceToArray(patterns).reduce(function (accum, pattern) {
       if (~pattern.indexOf('*')) {
         var rx = new RegExp('^' + pattern.replace(/[*]/g, '.*?') + '$')
-        Object.keys(pool).forEach(function (candidate) {
-          if (rx.test(candidate)) {
-            accum[candidate] = pool[candidate]
-            delete pool[candidate]
-          }
-        })
+        Object.keys(pool)
+          .filter((x) => coerceToArray(exclude).indexOf(x) === -1)
+          .forEach(function (candidate) {
+            if (rx.test(candidate)) {
+              accum[candidate] = pool[candidate]
+              delete pool[candidate]
+            }
+          })
       } else if (pattern in pool) {
         accum[pattern] = pool[pattern]
         delete pool[pattern]
@@ -157,6 +164,8 @@
         var component = accum[pattern] // reinsert previously selected entry
         delete accum[pattern]
         accum[pattern] = component
+      } else if (pattern.charAt() === '!' && (pattern = pattern.substr(1)) in accum) {
+        delete accum[pattern]
       }
       return accum
     }, {})
@@ -168,7 +177,10 @@
 
   function createNavListForGroup (groupData, page) {
     var componentsData = groupData.components
-    if (componentsData.length === 1 && componentsData[0].unversioned && componentsData[0].nav.items.length) {
+    if (componentsData.length === 1 &&
+      componentsData[0].unversioned &&
+      componentsData[0].nav.items.length &&
+      groupData.spreadSingleItem) {
       return createNavList(componentsData[0].nav, page)
     }
     var navList = createElement('ul.nav-list')
@@ -240,7 +252,7 @@
       if (versionData === currentVersionData) {
         navVersionMenu.appendChild(createElement('li.nav-version-label', 'Последняя версия'))
       } else if (versionData.prerelease) {
-        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', 'Версия в разработке'))
+        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предрелизные версии'))
       } else if (lastVersionData === currentVersionData) {
         navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предыдущие версии'))
       }
