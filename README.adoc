@@ -1,5 +1,6 @@
 = Antora Navigator Extension
 :url-repo: https://github.com/Docsvision/antora-navigator-extension
+:ui-repo: https://github.com/Docsvision/antora-ui-default
 
 Форк расширения Antora с небольшими изменениями. Расширение экспортирующее навигационные данные в JavaScript, что позволяет строить дерево навигации в браузере.
 
@@ -29,6 +30,9 @@ components: 'component-*' <.>
 - title: Asciidoctor
 components: ['*', '!asciidoctorj'] <.>
 output_file: site-navigation-data.js <.>
+subcomponents: <.>
+- parent: connectors <.>
+  components: ['number*-connector', '*-connector'] <.>
 ----
 <.> Регулирует наличие корневой группы, которая отображается в меню первой. По умолчанию это группа со ссылкой на главную страницу.
 <.> Название группы компонентов в формате glob pattern. Аналогичный формат используется link:https://docs.antora.org/antora/latest/playbook/content-source-version/#refname-projection-as-version[при указании версий в Antora playbook].
@@ -37,6 +41,9 @@ output_file: site-navigation-data.js <.>
 +
 <.> Если необходимо указать несколько компонентов, возьмите диапазон компонентов в квадратные скобки. Разделяйте имена компонентов запятой. Аналогичные правила исключения и включения компонентов используются link:https://docs.antora.org/antora/latest/playbook/content-branches/#exclude-branches-by-pattern[при указании веток в Antora playbook].
 <.> Имя и расположение результирующего файла с данными навигации.
+<.> Объявляет группу субкомпонентов.
+<.> Указывает родительский компонент, который будет включать подчинённые компоненты.
+<.> Указывает диапазон компонентов, которые будут являться подчинёнными родителю.
 
 == Требования к навигационным файлам в формате AsciiDoc
 
@@ -110,3 +117,92 @@ nav:
 * Последняя версия -- link:{url-repo}/-/blob/main/data/js/nav.js#L253[строка 253]
 * Предрелизные версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L255[строка 255]
 * Предыдущие версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L257[строка 257]
+
+== Настройка пользовательского интерфейса
+
+В репозитории расширения link:{url-repo}/-/tree/main/example/supplemental-ui/partials[в директории "supplemental-ui/partials"] располагаются файлы с шаблонами страниц. Эти файлы заменяют одноимённые в проекте пользовательского интерфейса. Например, link:{ui-repo}/tree/dev/src/partials[в пользовательском интерфейсе сайта Docsvision].
+
+Если вы используете пользовательский интерфейс, производный от пользовательского интерфейса сайта Docsvision, добавьте в файл `footer-scripts.hbs` следующие строки:
+
+[source]
+----
+<script src="{{{siteRootPath}}}/site-navigation-data.js"></script>
+<script src="{{{uiRootPath}}}/js/nav.js"></script>
+<script src="{{{uiRootPath}}}/js/site.js"></script>
+----
+
+При необходимости аналогичным образом отредактируйте файлы `head-meta.hbs` и `nav.hbs`.
+
+Если вы используете изменённые файлы link:{url-repo}/tree/dev/src/js[js] или link:{url-repo}/-/tree/main/example/supplemental-ui/css[сss] в пользовательском интерфейсе, приведите их в соответствие с файлами данного проекта: link:{ui-repo}/-/tree/main/example/supplemental-ui/js[js] link:{ui-repo}/-/tree/main/example/supplemental-ui/css[сss].
+
+== Настройка иконок компонентов навигационного меню
+
+Расширение Antora Navigator позволяет использовать специальные иконки для групп компонентов в навигационном меню.
+
+По умолчанию для всех навигационных групп используется одна иконка. Для сайта документации Docsvision были разработаны специальные иконки компонентов.
+
+Иконки можно изменить в файле link:{ui-repo}/blob/master/src/js/vendor/icondefs.js[icondefs.js].
+
+.icondefs.js
+[source,javascript]
+----
+;(function () {
+  /* eslint-disable max-len */
+  // prettier-ignore
+  var defs = [
+    {
+      id: 'icon-nav-component', <.>
+      viewBox: '0 0 30 30',
+      path: { d: 'M19.9035 16.7957L22.0559 24.8282C19.8893 25.7545 17.5053 26.2702 15 26.2702C12.4947 26.2702 10.1107 25.7545 7.94414 24.8282L10.0965 16.7957C7.16563 15.0998 5.19232 11.9329 5.19232 8.30324C5.19232 6.65115 5.6026 5.09557 6.32406 3.72984L12.9574 13.2033H17.0426L23.676 3.72984C24.3974 5.09557 24.8077 6.65115 24.8077 8.30324C24.8077 11.9329 22.8344 15.0998 19.9035 16.7957Z', fill: '#00A2DF' }, <.>
+    },
+    {
+      id: 'icon-nav-component-ROOT', <.>
+      viewBox: '0 0 14 15',
+      paths: [
+        { d: 'M1.36278 0L1.36787 3.94183L7.40742 3.95558L7.40236 0.0376971L8.73519 0.00265382L8.6981 5.27362L0 5.28486L0.0369378 0.0348597L1.36278 0Z', transform: 'translate(2.8598 6.64626)', fill: '#00A3E0' },
+        { d: 'M6.00319 0L11.7143 4.23063V5.86337L5.97677 1.61317L0 5.5623L0.137638 3.91056L6.00319 0Z', transform: 'translate(1.198 1.32681) scale(0.999808) rotate(-1.50596)', fill: '#087299' }, <.>
+      ],
+    },
+  ]
+  var icondefs = Object.assign(document.createElement('div'), { id: 'icondefs', hidden: true })
+  icondefs.appendChild(
+    defs.reduce(function (parent, icondef) {
+      var symbol = Object.assign(document.createElementNS('http://www.w3.org/2000/svg', 'symbol'), { id: icondef.id })
+      symbol.setAttribute('viewBox', icondef.viewBox)
+      var contents = icondef.contents || icondef.paths || [icondef.path]
+      if (Array.isArray(contents)) {
+        contents.forEach(function (props) {
+          symbol.appendChild(
+            Object.entries(props).reduce(function (tag, prop) {
+              tag.setAttribute(prop[0], prop[1])
+              return tag
+            }, document.createElementNS('http://www.w3.org/2000/svg', 'path'))
+          )
+        })
+      } else {
+        symbol.innerHTML = contents
+      }
+      parent.appendChild(symbol)
+      return parent
+    }, document.createElementNS('http://www.w3.org/2000/svg', 'svg'))
+  )
+  document.body.appendChild(icondefs)
+})()
+----
+<.> Корневая навигационная группа, а также любой другой компонент, для которого не указана специальная иконка.
+<.> Иконка для корневой навигационной группы link:https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths[в формате SVG path].
+<.> Компонент с именем ROOT (`name: ROOT`) в файле `antora.yml`.
+<.> Иконка для компонента с именем ROOT link:https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths[в формате SVG path].
+
+Если вы хотите управлять иконками, добавьте файл link:{ui-repo}/blob/master/src/js/vendor/icondefs.js[icondefs.js] в свой проект пользовательского интерфейса в папку `src/js/vendor/`.
+
+Также зарегистрируйте файл `icondefs.js` в шаблоне link:{ui-repo}/blob/dev/src/partials/footer-scripts.hbs[footer-scripts.hbs] следующим образом:
+
+.footer-scripts.hbs
+[source]
+----
+<script src="{{siteRootPath}}/site-navigation-data.js"></script>
+<script src="{{uiRootPath}}/js/vendor/icondefs.js"></script>
+----
+
+CAUTION: Файл `icondefs.js` должен быть вторым в списке после `site-navigation-data.js`.
