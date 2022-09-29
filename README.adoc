@@ -113,10 +113,10 @@ nav:
 
 Локализовать или изменить эти значения можно link:{url-repo}/-/blob/main/data/js/nav.js[в файле nav.js].
 
-* На главную -- строки link:{url-repo}/-/blob/main/data/js/nav.js#L143[143] и link:{url-repo}/-/blob/main/data/js/nav.js#L144[144].
-* Последняя версия -- link:{url-repo}/-/blob/main/data/js/nav.js#L253[строка 253]
-* Предрелизные версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L255[строка 255]
-* Предыдущие версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L257[строка 257]
+* На главную -- строки link:{url-repo}/-/blob/main/data/js/nav.js#L133[133] и link:{url-repo}/-/blob/main/data/js/nav.js#L134[134].
+* Последняя версия -- link:{url-repo}/-/blob/main/data/js/nav.js#L243[line 243]
+* Предрелизные версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L245[line 245]
+* Предыдущие версии -- link:{url-repo}/-/blob/main/data/js/nav.js#L247[line 247]
 
 == Настройка пользовательского интерфейса
 
