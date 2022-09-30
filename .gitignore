@@ -1,5 +1,6 @@
 /_*/
 /example/public/
+/example/build/
 /node_modules/
 /reports/
 /example/build
