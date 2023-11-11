@@ -1,4 +1,5 @@
 = Antora Navigator Extension
+:icons: font
 
 An Antora extension that exports the navigation data to JavaScript so the navigation tree can be constructed in the browser.
 
@@ -10,6 +11,11 @@ You're free to test it and give feedback, but take caution when relying on it in
 
 You can find an example of how to use this extension in the link:example[example] directory.
 The example includes a configuration file as well as the required UI files that build, style, and provide the behavior for the navigation tree.
+
+NOTE: The script provided by this extension ([.path]_data/js/nav.js_) does not control the layout of the navigation pane and its container.
+Rather, it only populates the pane with navigation groups and items and adds expand/collapse/focus behavior the tree it adds.
+The layout and behavior of the navigation pane itself is controlled by the nav script provided by the UI ([.path]_src/js/01-nav.js_ in the default UI). 
+That script is expected to recognize it's no longer in charge of the navigation tree and short-circuit after registering the layout event handlers.
 
 == Configuration
 
