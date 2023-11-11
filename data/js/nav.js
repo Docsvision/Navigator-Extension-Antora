@@ -2,8 +2,16 @@
 ;(function () {
   'use strict'
 
+  var _ = {
+    home: 'Home',
+    currentVersion: 'Current version',
+    previousVersions: 'Previous versions',
+    prereleaseVersions: 'Prerelease versions',
+  }
+
   function buildNav (navData, nav, page) {
     if (!page) return
+    loadStrings()
     if (nav.classList.contains('fit')) {
       ;(fitNav = fitNav.bind(nav))() // eslint-disable-line no-func-assign
       window.addEventListener('scroll', fitNav)
@@ -130,8 +138,8 @@
     if (found) return components
     return components.concat({
       name: 'home',
-      title: 'Home',
-      versions: [{ version: '', sets: [{ content: 'Home', url: homeUrl }] }],
+      title: _.home,
+      versions: [{ version: '', sets: [{ content: _.home, url: homeUrl }] }],
     })
   }
 
@@ -240,11 +248,11 @@
     var navVersionMenu = createElement('ul.nav-version-menu')
     versions.reduce(function (lastVersionData, versionData) {
       if (versionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Current version'))
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.currentVersion))
       } else if (versionData.prerelease) {
-        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', 'Prerelease versions'))
+        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', _.prereleaseVersions))
       } else if (lastVersionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Previous versions'))
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.previousVersions))
       }
       var versionDataset = { version: versionData.version }
       navVersionMenu
@@ -514,6 +522,14 @@
 
   function coerceToArray (val) {
     return Array.isArray(val) ? val : [val]
+  }
+
+  function loadStrings () {
+    var dataset = (document.getElementById('navigator-script') || {}).dataset
+    if (!dataset) return
+    Object.keys(_).forEach(function (key) {
+      _[key] = dataset['t' + key.charAt().toUpperCase() + key.slice(1)] || _[key]
+    })
   }
 
   buildNav(extractNavData(window), document.querySelector('.nav'), getPage())
