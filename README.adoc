@@ -144,22 +144,23 @@ That configuration is left as an exercise for the reader.
 
 This extension uses the English language by default in the following cases:
 
-* The name of the root group in the navigation. Default value: Home.
-* Version descriptions: Current version, Prerelease versions, Previous versions.
+* The name of the root group in the navigation (default: Home)
+* Version labels (defaults: Current version, Prerelease versions, Previous versions)
 
-Once the proposal in https://gitlab.com/opendevise/oss/antora-navigator-extension/-/issues/2[issue #2] is implemented, you will be able to set localized values for these entries on the script tag:
+You can set localized values for these entries on the script tag that loads the navigator script.
+The script tag must have `id="navigator-script"` so that the script can identify it.
 
-[source,html]
+[,html]
 ----
-<script src="{{{uiRootPath}}}/js/nav.js"
-  data-t-home="Page d´accueil"
+<script id="navigator-script" src="{{{uiRootPath}}}/js/nav.js"
+  data-t-home="Page d’accueil"
   data-t-current-version="Version actuelle"
   data-t-previous-versions="Versions précédentes"
   data-t-prerelease-versions="Versions préliminaires">
 </script>
 ----
 
-These translations can then be parameterized by any means using template engine variables.
+These translations can be further parameterized by any means using template engine variables.
 
 == Copyright and License
 
