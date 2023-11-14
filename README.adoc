@@ -73,7 +73,7 @@ To start, you will need to add the following lines to your footer partial (e.g.,
 ----
 <script src="{{{siteRootPath}}}/site-navigation-data.js"></script>
 <script id="navigator-script" src="{{{uiRootPath}}}/js/nav.js"></script>
-<script src="{{{uiRootPath}}}/js/site.js"></script>
+<script id="site-script" src="{{{uiRootPath}}}/js/site.js" data-ui-root-path="{{{uiRootPath}}}"></script>
 ----
 
 In your header partial (e.g., `head-meta.hbs`), you will need to add this line:
