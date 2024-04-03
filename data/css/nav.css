@@ -43,7 +43,7 @@ a.nav-text:not([href]),
   color: #000;
   display: flex;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: bold;
   margin: 2em 0 0;
 }
 
@@ -112,7 +112,7 @@ a.nav-text:not([href]),
 }
 
 .nav-list .nav-title .nav-text {
-  font-weight: 500;
+  font-weight: bold;
 }
 
 .nav-list [aria-current=page] {
@@ -222,7 +222,7 @@ a.nav-text:not([href]),
 }
 
 .nav-version-label {
-  font-weight: 500;
+  font-weight: bold;
 }
 
 .nav-version-option + .nav-version-label {
