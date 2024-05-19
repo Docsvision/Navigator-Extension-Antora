@@ -494,11 +494,11 @@
   function computeRelativePath (from, to) {
     var fromParts = trimArray(from.split('/'))
     var toParts = trimArray(to.split('/'))
-    for (var i = 0, l = Math.min(fromParts.length, toParts.length), sharedPathLength = l; i < l; i++) {
-      if (fromParts[i] !== toParts[i]) {
-        sharedPathLength = i
-        break
-      }
+    var sharedPathLength = Math.min(fromParts.length, toParts.length)
+    for (var i = 0; i < sharedPathLength; i++) {
+      if (fromParts[i] === toParts[i]) continue
+      sharedPathLength = i
+      break
     }
     var outputParts = []
     for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) {
@@ -509,12 +509,12 @@
 
   function trimArray (arr) {
     var start = 0
-    var length = arr.length
-    for (; start < length; start++) {
+    var end = arr.length
+    for (; start < end; start++) {
       if (arr[start]) break
     }
-    if (start === length) return []
-    for (var end = length; end > 0; end--) {
+    if (start === end) return []
+    for (; end > 0; end--) {
       if (arr[end - 1]) break
     }
     return arr.slice(start, end)
