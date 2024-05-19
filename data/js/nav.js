@@ -310,25 +310,25 @@
   function ensureNavList (navItem, componentData, selectedVersion, page) {
     if (componentData.unversioned) {
       if (!navItem.querySelector('.nav-list')) navItem.appendChild(createNavList(componentData.nav, page))
+      return
+    }
+    var versionData
+    var navVersion = navItem.querySelector('.nav-version')
+    if (selectedVersion) {
+      navVersion.dataset.version = selectedVersion
+      versionData = componentData.versions[selectedVersion]
+      navVersion.textContent = versionData.displayVersion
     } else {
-      var versionData
-      var navVersion = navItem.querySelector('.nav-version')
-      if (selectedVersion) {
-        navVersion.dataset.version = selectedVersion
-        versionData = componentData.versions[selectedVersion]
-        navVersion.textContent = versionData.displayVersion
-      } else {
-        selectedVersion = navVersion.dataset.version
-        versionData = componentData.versions[selectedVersion]
-      }
-      var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
-      var firstNavList = navItem.querySelector('.nav-list[data-version]')
-      if (navList) {
-        if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
-      } else {
-        navList = createNavList(versionData.nav, page, selectedVersion)
-        firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
-      }
+      selectedVersion = navVersion.dataset.version
+      versionData = componentData.versions[selectedVersion]
+    }
+    var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
+    var firstNavList = navItem.querySelector('.nav-list[data-version]')
+    if (navList) {
+      if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
+    } else {
+      navList = createNavList(versionData.nav, page, selectedVersion)
+      firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
     }
   }
 
@@ -427,12 +427,11 @@
   }
 
   function hideVersionMenu (menu, force) {
-    if (force || menu.classList.contains('is-active')) {
-      menu.classList.add('is-clipped')
-      menu.style.maxHeight = 0
-      menu.classList.remove('is-active')
-      return true
-    }
+    if (!(force || menu.classList.contains('is-active'))) return
+    menu.classList.add('is-clipped')
+    menu.style.maxHeight = 0
+    menu.classList.remove('is-active')
+    return true
   }
 
   function trapEvent (e) {
@@ -481,14 +480,11 @@
       hash = to.substr(hashIdx)
       to = to.substr(0, hashIdx)
     }
-    if (from === to) {
-      return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
-    } else {
-      return (
-        (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
-        (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
-      )
-    }
+    if (from === to) return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
+    return (
+      (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
+      (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
+    )
   }
 
   function computeRelativePath (from, to) {
@@ -501,9 +497,7 @@
       break
     }
     var outputParts = []
-    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) {
-      outputParts.push('..')
-    }
+    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) outputParts.push('..')
     return outputParts.concat(toParts.slice(sharedPathLength)).join('/')
   }
 
