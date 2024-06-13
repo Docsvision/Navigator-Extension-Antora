@@ -9,6 +9,8 @@
     prereleaseVersions: 'Prerelease versions',
   }
 
+  var SECT_CLASS_RX = /^sect(\d)$/
+
   function buildNav (navData, nav, page) {
     if (!page) return
     loadStrings()
@@ -30,7 +32,13 @@
     closeVersionMenu = closeVersionMenu.bind(nav) // eslint-disable-line no-func-assign
     nav.addEventListener('click', closeVersionMenu)
     nav.appendChild(navGroups)
-    scrollToCurrentPageItem(navGroups, page.scope)
+    let scrolled
+    if (nav.querySelector('a.nav-text[href^="#"]')) {
+      onHashChange = onHashChange.bind(nav) // eslint-disable-line no-func-assign
+      window.location.hash && (scrolled = onHashChange())
+      window.addEventListener('hashchange', onHashChange)
+    }
+    scrolled || scrollToCurrentPageItem(navGroups, page.scope)
   }
 
   function extractNavData (source) {
@@ -212,6 +220,7 @@
       var homeUrl = componentData.nav.url
       if ((navLink.href = relativize(homeUrl)) === relativize(page.url)) {
         navItem.classList.add('is-active')
+        navLink.classList.add('is-initial')
         navLink.setAttribute('aria-current', 'page')
       }
     } else {
@@ -286,6 +295,7 @@
             el.classList.add('is-active')
           })
           navItem.classList.add('is-active')
+          navLink.classList.add('is-initial')
           navLink.setAttribute('aria-current', 'page')
         }
         navItem.appendChild(navLink)
@@ -457,6 +467,46 @@
     while (container.contains((target = target.offsetParent))) offset += target.offsetTop
     var adjustment = offset - midpoint
     if (adjustment > 0) container.scrollTop = adjustment
+  }
+
+  function onHashChange () {
+    var navLink
+    var hash = window.location.hash
+    if (hash) {
+      if (hash.indexOf('%')) hash = decodeURIComponent(hash)
+      navLink = this.querySelector('a.nav-text[href="' + hash + '"]')
+      if (!navLink) {
+        var targetNode = document.getElementById(hash.slice(1))
+        if (targetNode) {
+          var current = targetNode
+          var ceiling = document.querySelector('article.doc')
+          while ((current = current.parentNode) && current !== ceiling) {
+            var id = current.id
+            // NOTE: look for section heading
+            if (!id && (id = SECT_CLASS_RX.test(current.className))) id = (current.firstElementChild || {}).id
+            if (id && (navLink = this.querySelector('a.nav-text[href="#' + id + '"]'))) break
+          }
+        }
+      }
+    }
+    if (!(navLink || (navLink = this.querySelector('a.nav-text.is-initial')))) return
+    var currentPageLink = this.querySelector('[aria-current=page]')
+    if (navLink === currentPageLink) return
+    if (currentPageLink) toggleActivePath(this, currentPageLink, 'remove')
+    toggleActivePath(this, navLink, 'add')
+    scrollToCurrentPageItem(this.querySelector('.nav-groups'), navLink.parentNode)
+    return true
+  }
+
+  function toggleActivePath (nav, navLink, action) {
+    navLink[action === 'add' ? 'setAttribute' : 'removeAttribute']('aria-current', 'page')
+    var navItem = navLink.parentNode
+    navItem.classList[action]('is-active')
+    var ancestor = navItem.parentNode
+    while (ancestor !== nav) {
+      if (ancestor.tagName === 'LI' && ancestor.classList.contains('nav-item')) ancestor.classList[action]('is-active')
+      ancestor = ancestor.parentNode
+    }
   }
 
   function inhibitSelectionOnSecondClick (e) {
