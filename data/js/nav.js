@@ -33,7 +33,9 @@
     nav.addEventListener('click', closeVersionMenu)
     nav.appendChild(navGroups)
     let scrolled
-    if (nav.querySelector('a.nav-text[href^="#"]')) {
+    let firstInternalNavLink = nav.querySelector('a.nav-text[href^="#"]')
+    if (firstInternalNavLink) {
+      if (!nav.querySelector('a.nav-text.is-initial')) firstInternalNavLink.classList.add('is-initial')
       onHashChange = onHashChange.bind(nav) // eslint-disable-line no-func-assign
       window.location.hash && (scrolled = onHashChange())
       window.addEventListener('hashchange', onHashChange)
