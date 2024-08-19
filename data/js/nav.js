@@ -2,8 +2,18 @@
 ;(function () {
   'use strict'
 
+  var _ = {
+    home: 'Home',
+    currentVersion: 'Current version',
+    previousVersions: 'Previous versions',
+    prereleaseVersions: 'Prerelease versions',
+  }
+
+  var SECT_CLASS_RX = /^sect(\d)$/
+
   function buildNav (navData, nav, page) {
     if (!page) return
+    loadStrings()
     if (nav.classList.contains('fit')) {
       ;(fitNav = fitNav.bind(nav))() // eslint-disable-line no-func-assign
       window.addEventListener('scroll', fitNav)
@@ -22,7 +32,15 @@
     closeVersionMenu = closeVersionMenu.bind(nav) // eslint-disable-line no-func-assign
     nav.addEventListener('click', closeVersionMenu)
     nav.appendChild(navGroups)
-    scrollToCurrentPageItem(navGroups, page.scope)
+    let scrolled
+    let firstInternalNavLink = nav.querySelector('a.nav-text[href^="#"]')
+    if (firstInternalNavLink) {
+      if (!nav.querySelector('a.nav-text.is-initial')) firstInternalNavLink.classList.add('is-initial')
+      onHashChange = onHashChange.bind(nav) // eslint-disable-line no-func-assign
+      window.location.hash && (scrolled = onHashChange())
+      window.addEventListener('hashchange', onHashChange)
+    }
+    scrolled || scrollToCurrentPageItem(navGroups, page.scope)
   }
 
   function extractNavData (source) {
@@ -130,8 +148,8 @@
     if (found) return components
     return components.concat({
       name: 'home',
-      title: 'На главную',
-      versions: [{ version: '', sets: [{ content: 'На главную', url: homeUrl }] }],
+      title: _.home,
+      versions: [{ version: '', sets: [{ content: _.home, url: homeUrl }] }],
     })
   }
 
@@ -159,8 +177,13 @@
     }, {})
   }
 
-   function createNavTitleForGroup (groupData) {
-    return createElement('h3.nav-title', groupData.title)
+  function createNavTitleForGroup (groupData) {
+    var navTitle = createElement('h3.nav-title', groupData.title)
+    if (groupData.iconId) {
+      navTitle.classList.add('has-icon')
+      navTitle.insertBefore(createSvgElement('.icon.nav-group-icon', '#' + groupData.iconId), navTitle.firstChild)
+    }
+    return navTitle
   }
 
   function createNavListForGroup (groupData, page) {
@@ -199,6 +222,7 @@
       var homeUrl = componentData.nav.url
       if ((navLink.href = relativize(homeUrl)) === relativize(page.url)) {
         navItem.classList.add('is-active')
+        navLink.classList.add('is-initial')
         navLink.setAttribute('aria-current', 'page')
       }
     } else {
@@ -235,11 +259,11 @@
     var navVersionMenu = createElement('ul.nav-version-menu')
     versions.reduce(function (lastVersionData, versionData) {
       if (versionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Последняя версия'))
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.currentVersion))
       } else if (versionData.prerelease) {
-        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предрелизные версии'))
+        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', _.prereleaseVersions))
       } else if (lastVersionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предыдущие версии'))
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.previousVersions))
       }
       var versionDataset = { version: versionData.version }
       navVersionMenu
@@ -273,6 +297,7 @@
             el.classList.add('is-active')
           })
           navItem.classList.add('is-active')
+          navLink.classList.add('is-initial')
           navLink.setAttribute('aria-current', 'page')
         }
         navItem.appendChild(navLink)
@@ -297,25 +322,25 @@
   function ensureNavList (navItem, componentData, selectedVersion, page) {
     if (componentData.unversioned) {
       if (!navItem.querySelector('.nav-list')) navItem.appendChild(createNavList(componentData.nav, page))
+      return
+    }
+    var versionData
+    var navVersion = navItem.querySelector('.nav-version')
+    if (selectedVersion) {
+      navVersion.dataset.version = selectedVersion
+      versionData = componentData.versions[selectedVersion]
+      navVersion.textContent = versionData.displayVersion
     } else {
-      var versionData
-      var navVersion = navItem.querySelector('.nav-version')
-      if (selectedVersion) {
-        navVersion.dataset.version = selectedVersion
-        versionData = componentData.versions[selectedVersion]
-        navVersion.textContent = versionData.displayVersion
-      } else {
-        selectedVersion = navVersion.dataset.version
-        versionData = componentData.versions[selectedVersion]
-      }
-      var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
-      var firstNavList = navItem.querySelector('.nav-list[data-version]')
-      if (navList) {
-        if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
-      } else {
-        navList = createNavList(versionData.nav, page, selectedVersion)
-        firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
-      }
+      selectedVersion = navVersion.dataset.version
+      versionData = componentData.versions[selectedVersion]
+    }
+    var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
+    var firstNavList = navItem.querySelector('.nav-list[data-version]')
+    if (navList) {
+      if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
+    } else {
+      navList = createNavList(versionData.nav, page, selectedVersion)
+      firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
     }
   }
 
@@ -414,12 +439,11 @@
   }
 
   function hideVersionMenu (menu, force) {
-    if (force || menu.classList.contains('is-active')) {
-      menu.classList.add('is-clipped')
-      menu.style.maxHeight = 0
-      menu.classList.remove('is-active')
-      return true
-    }
+    if (!(force || menu.classList.contains('is-active'))) return
+    menu.classList.add('is-clipped')
+    menu.style.maxHeight = 0
+    menu.classList.remove('is-active')
+    return true
   }
 
   function trapEvent (e) {
@@ -440,9 +464,51 @@
     if (!scope) return
     var target = (scope.querySelector('[aria-current=page]') || { parentNode: scope.previousElementSibling }).parentNode
     var containerRect = container.getBoundingClientRect()
-    var midpoint = (containerRect.height - containerRect.top) * 0.5
-    var adjustment = target.offsetTop + target.offsetHeight * 0.5 - midpoint
+    var midpoint = containerRect.height * 0.5
+    var offset = target.offsetTop + target.offsetHeight * 0.5
+    while (container.contains((target = target.offsetParent))) offset += target.offsetTop
+    var adjustment = offset - midpoint
     if (adjustment > 0) container.scrollTop = adjustment
+  }
+
+  function onHashChange () {
+    var navLink
+    var hash = window.location.hash
+    if (hash) {
+      if (hash.indexOf('%')) hash = decodeURIComponent(hash)
+      navLink = this.querySelector('a.nav-text[href="' + hash + '"]')
+      if (!navLink) {
+        var targetNode = document.getElementById(hash.slice(1))
+        if (targetNode) {
+          var current = targetNode
+          var ceiling = document.querySelector('article.doc')
+          while ((current = current.parentNode) && current !== ceiling) {
+            var id = current.id
+            // NOTE: look for section heading
+            if (!id && (id = SECT_CLASS_RX.test(current.className))) id = (current.firstElementChild || {}).id
+            if (id && (navLink = this.querySelector('a.nav-text[href="#' + id + '"]'))) break
+          }
+        }
+      }
+    }
+    if (!(navLink || (navLink = this.querySelector('a.nav-text.is-initial')))) return
+    var currentPageLink = this.querySelector('[aria-current=page]')
+    if (navLink === currentPageLink) return
+    if (currentPageLink) toggleActivePath(this, currentPageLink, 'remove')
+    toggleActivePath(this, navLink, 'add')
+    scrollToCurrentPageItem(this.querySelector('.nav-groups'), navLink.parentNode)
+    return true
+  }
+
+  function toggleActivePath (nav, navLink, action) {
+    navLink[action === 'add' ? 'setAttribute' : 'removeAttribute']('aria-current', 'page')
+    var navItem = navLink.parentNode
+    navItem.classList[action]('is-active')
+    var ancestor = navItem.parentNode
+    while (ancestor !== nav) {
+      if (ancestor.tagName === 'LI' && ancestor.classList.contains('nav-item')) ancestor.classList[action]('is-active')
+      ancestor = ancestor.parentNode
+    }
   }
 
   function inhibitSelectionOnSecondClick (e) {
@@ -466,40 +532,35 @@
       hash = to.substr(hashIdx)
       to = to.substr(0, hashIdx)
     }
-    if (from === to) {
-      return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
-    } else {
-      return (
-        (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
-        (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
-      )
-    }
+    if (from === to) return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
+    return (
+      (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
+      (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
+    )
   }
 
   function computeRelativePath (from, to) {
     var fromParts = trimArray(from.split('/'))
     var toParts = trimArray(to.split('/'))
-    for (var i = 0, l = Math.min(fromParts.length, toParts.length), sharedPathLength = l; i < l; i++) {
-      if (fromParts[i] !== toParts[i]) {
-        sharedPathLength = i
-        break
-      }
+    var sharedPathLength = Math.min(fromParts.length, toParts.length)
+    for (var i = 0; i < sharedPathLength; i++) {
+      if (fromParts[i] === toParts[i]) continue
+      sharedPathLength = i
+      break
     }
     var outputParts = []
-    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) {
-      outputParts.push('..')
-    }
+    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) outputParts.push('..')
     return outputParts.concat(toParts.slice(sharedPathLength)).join('/')
   }
 
   function trimArray (arr) {
     var start = 0
-    var length = arr.length
-    for (; start < length; start++) {
+    var end = arr.length
+    for (; start < end; start++) {
       if (arr[start]) break
     }
-    if (start === length) return []
-    for (var end = length; end > 0; end--) {
+    if (start === end) return []
+    for (; end > 0; end--) {
       if (arr[end - 1]) break
     }
     return arr.slice(start, end)
@@ -507,6 +568,14 @@
 
   function coerceToArray (val) {
     return Array.isArray(val) ? val : [val]
+  }
+
+  function loadStrings () {
+    var dataset = (document.getElementById('navigator-script') || {}).dataset
+    if (!dataset) return
+    Object.keys(_).forEach(function (key) {
+      _[key] = dataset['t' + key.charAt().toUpperCase() + key.slice(1)] || _[key]
+    })
   }
 
   buildNav(extractNavData(window), document.querySelector('.nav'), getPage())
