@@ -20,6 +20,10 @@
       window.addEventListener('resize', fitNav)
     }
     relativize = relativize.bind(null, page.url) // eslint-disable-line no-func-assign
+    document.querySelector('.nav-tree-toggle[data-action=collapse]')
+      ?.addEventListener('click', collapseAllItems)
+    document.querySelector('.nav-tree-toggle[data-action=expand]')
+      ?.addEventListener('click', expandAllItems)
     var navGroups = createElement('.nav-groups.scrollbar')
     reshapeNavData(navData).groups.forEach(function (groupData) {
       var navGroup = createElement('.nav-group')
@@ -215,9 +219,13 @@
     return navItem
   }
 
-  function createNavTitle (navItem, componentData, page) {
+  function createNavTitle (navItem, componentData, page, url) {
     var navTitle = createElement('.nav-title')
     var navLink = createElement('a.link.nav-text', componentData.title)
+    var navUrl = componentData.unversioned
+      ? componentData.versions[''].nav.url
+      : componentData.versions[getActiveVersion(componentData, page)].nav.url
+    var navToggler
     if (componentData.name === 'home') {
       var homeUrl = componentData.nav.url
       if ((navLink.href = relativize(homeUrl)) === relativize(page.url)) {
@@ -226,15 +234,39 @@
         navLink.setAttribute('aria-current', 'page')
       }
     } else {
-      navLink.addEventListener('click', toggleNav.bind(navItem, componentData, false, page))
+      navToggler = createElement('button.nav-item-toggle')
+      if (page.navItemToggleIconId) {
+        navToggler.appendChild(createSvgElement('.icon.nav-item-toggle-icon', '#' + page.navItemToggleIconId))
+      }
+      if (navUrl) { 
+        navLink.href = relativize(navUrl) 
+      }
+      navToggler.addEventListener('click', toggleNav.bind(navItem, componentData, false, page))
     }
     if (componentData.iconId) {
       navTitle.classList.add('has-icon')
       navLink.insertBefore(createSvgElement('.icon.nav-icon', '#' + componentData.iconId), navLink.firstChild)
     }
     navTitle.appendChild(navLink)
+    navToggler && navTitle.appendChild(navToggler)
     if (!componentData.unversioned) navTitle.appendChild(createNavVersionDropdown(navItem, componentData, page))
     return navTitle
+  }
+
+  function getCurrentVersion(componentData) {
+    var versions = Object.values(componentData.versions)
+      var currentVersionData =
+        versions.length > 1
+          ? versions.find(function (version) {
+            return !version.prerelease
+          }) || versions[0]
+          : versions[0]
+    return currentVersionData;
+  }
+  function getActiveVersion(componentData, page) {
+    var currentVersionData = getCurrentVersion(componentData);
+    var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
+    return activeVersion || versions[0]
   }
 
   function createNavVersionDropdown (navItem, componentData, page) {
@@ -250,6 +282,8 @@
     var navVersionButton = createElement('button.button.nav-version-button')
     var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
     var activeDisplayVersion = componentData.versions[activeVersion].displayVersion
+    navVersionButton.setAttribute('data-display', 
+      `${activeVersion === currentVersionData.version ? _.currentVersion : _.previousVersions} ${activeVersion}`)
     navVersionButton.appendChild(
       createElement('span.nav-version', { dataset: { version: activeVersion } }, activeDisplayVersion)
     )
@@ -281,10 +315,13 @@
     var navList = createElement('ul.nav-list')
     if (version) navList.dataset.version = version
     navEntryData.items.forEach(function (navItemData) {
+      var itemIsAnnotation = navItemData.url && navItemData.url.includes('index.html')
+      var itemNoChildren = !navItemData.items || navItemData.items.length === 0
       if (navItemData.name) {
         navList.appendChild(createNavItemForComponent(navItemData, page))
         return
       }
+      if (itemIsAnnotation && itemNoChildren) return
       var navItem = createElement('li.nav-item')
       if (navItemData.url) {
         var navLink = createElement('a.link.nav-text', { href: relativize(navItemData.url) }, navItemData.content)
@@ -326,19 +363,24 @@
     }
     var versionData
     var navVersion = navItem.querySelector('.nav-version')
+    var navVersionButton = navItem.querySelector('.nav-version-button')
     if (selectedVersion) {
       navVersion.dataset.version = selectedVersion
       versionData = componentData.versions[selectedVersion]
       navVersion.textContent = versionData.displayVersion
+      navVersionButton.setAttribute('data-display', 
+      `${selectedVersion === getCurrentVersion(componentData).version ? _.currentVersion : _.previousVersions} ${selectedVersion}`)
     } else {
       selectedVersion = navVersion.dataset.version
       versionData = componentData.versions[selectedVersion]
     }
     var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
+    var navTitle = navItem.querySelector('.nav-title')
     var firstNavList = navItem.querySelector('.nav-list[data-version]')
     if (navList) {
       if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
     } else {
+      updateNavTitle(navTitle, componentData, selectedVersion)
       navList = createNavList(versionData.nav, page, selectedVersion)
       firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
     }
@@ -367,6 +409,14 @@
     if (innerHTML) element.innerHTML = innerHTML
     return element
   }
+
+   function updateNavTitle(navTitle, componentData, selectedVersion) {
+    if (!selectedVersion) return
+    var navUrl = componentData.versions[selectedVersion].nav.url
+    var navLink = navTitle.querySelector('.link.nav-text');
+    navLink.href = relativize(navUrl);
+  }
+
 
   function createSvgElement (attrs, useRef) {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -578,5 +628,32 @@
     })
   }
 
+  function collapseAllItems(ev) {
+    ev.stopPropagation()
+    var nav = document.querySelector(".nav")
+    var collapse = function(item) {
+        item.querySelectorAll('.nav-item').forEach(
+          function(i) {
+            i.classList.remove('is-active')
+        })
+    }
+    collapse(nav)
+  }
+
+  function expandAllItems(ev) {
+    ev.stopPropagation()
+    var nav = document.querySelector(".nav")
+    var expand = function(item) {
+        var items = item.querySelectorAll('.nav-item').forEach(
+          function(i) {
+            if(!i.classList.contains('is-active')) {
+              i.querySelector('.nav-item-toggle')?.click()
+            }
+            expand(i)
+        })
+    }
+    expand(nav)
+  }
+  
   buildNav(extractNavData(window), document.querySelector('.nav'), getPage())
 })()

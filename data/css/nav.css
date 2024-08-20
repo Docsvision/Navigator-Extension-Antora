@@ -83,6 +83,7 @@ a.nav-text:active {
   display: flex;
   justify-content: space-between;
   position: relative;
+  padding-left: 1em;
 }
 
 .nav-list .nav-title .nav-text {
@@ -94,7 +95,7 @@ a.nav-text:active {
 }
 
 .nav-list .nav-title.has-icon + .nav-list {
-  margin-left: 1.5em;
+  margin-left: 2em;
 }
 
 .nav-icon {
@@ -177,7 +178,8 @@ a.nav-text:active {
   transition: transform 0.15s ease-in-out;
 }
 
-.nav-item.is-active > .nav-item-toggle {
+.nav-item.is-active > .nav-item-toggle,
+.nav-item.is-active > .nav-title .nav-item-toggle {
   transform: rotate(90deg) translateY(-0.025em);
   -moz-transform: rotate(90deg);
 }
@@ -187,6 +189,7 @@ a.nav-text:active {
 }
 
 .nav-version-button {
+  position:relative;
   align-items: center;
   background: transparent;
   border: 0;
@@ -199,6 +202,26 @@ a.nav-text:active {
   height: 1.25rem;
   opacity: 0.75;
   padding: 0 0 0 0.5em;
+}
+
+.nav-version-button:before {
+	content: attr(data-display);
+	position: absolute;
+	right: 0;
+	top: calc(-100% - 20px);
+	width: 200%;
+	padding: 5px 5px;
+	background-color: #271f47;
+	color: whitesmoke;
+	border-radius: 5px;
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.nav-version-button:hover:before {
+	opacity: 1;
+	visibility: visible;
 }
 
 .nav-version-button .nav-version-icon {

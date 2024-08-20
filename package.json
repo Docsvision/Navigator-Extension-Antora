@@ -16,7 +16,8 @@
     "coverage": "nyc _mocha",
     "format": "node npm/format.js data,lib,test,npm",
     "lint": "eslint \"{data,lib,test,npm}/**/*.js\"",
-    "test": "_mocha"
+    "test": "_mocha",
+    "update": "git fetch upstream && git merge upstream/main"
   },
   "files": [
     "data",
