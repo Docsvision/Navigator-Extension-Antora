@@ -303,6 +303,15 @@
       navVersionMenu
         .appendChild(createElement('li.nav-version-option', { dataset: versionDataset }, versionData.displayVersion))
         .addEventListener('click', selectVersion.bind(navVersionMenu, navItem, componentData, page))
+       var downloadPdfBlock = createElement('div.nav-version-pdf-block')
+      var downloadPdfLink = createElement('a.nav-version-pdf-download-link')
+      downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${versionData.version}/${componentData.title}.pdf`);
+      downloadPdfLink.setAttribute("download", componentData.title);
+      downloadPdfLink.innerText = "Скачать pdf версии"
+      var downloadPdfIcon = createSvgElement('.icon.nav-version-pdf-download-icon', '#' + "icon-nav-component-system")
+      downloadPdfBlock.appendChild(downloadPdfIcon)
+      downloadPdfBlock.appendChild(downloadPdfLink)
+      navVersionMenu.appendChild(downloadPdfBlock)
       return versionData
     }, undefined)
     navVersionButton.addEventListener('click', toggleVersionMenu.bind(navVersionMenu))

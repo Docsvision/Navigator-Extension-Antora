@@ -288,6 +288,15 @@ a.nav-text:active {
   color: var(--link_hover-font-color);
 }
 
+.nav-version-pdf-block {
+	padding: 0 0.3em 0.3em 0.5em;
+	display: flex;
+}
+
+.nav-version-pdf-download-icon {
+	margin-right: 0.3em;
+}
+
 @media screen and (min-width: 1024px) {
   .nav-container {
     transform: none;
