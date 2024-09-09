@@ -264,7 +264,8 @@
     return currentVersionData;
   }
   function getActiveVersion(componentData, page) {
-    var currentVersionData = getCurrentVersion(componentData);
+    var versions = Object.values(componentData.versions)
+    var currentVersionData = getCurrentVersion(componentData)
     var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
     return activeVersion || versions[0]
   }
