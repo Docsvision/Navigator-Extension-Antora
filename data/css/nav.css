@@ -204,12 +204,13 @@ a.nav-text:active {
   padding: 0 0 0 0.5em;
 }
 
-.nav-version-button:before {
+.with-tooltip:before {
 	content: attr(data-display);
 	position: absolute;
 	right: 0;
-	top: calc(-100% - 20px);
-	width: 200%;
+	top: 0;
+  transform: translateY(calc(-100% - 5px));
+  width: 150px;
 	padding: 5px 5px;
 	background-color: #271f47;
 	color: whitesmoke;
@@ -219,7 +220,7 @@ a.nav-text:active {
 	transition: opacity 0.3s;
 }
 
-.nav-version-button:hover:before {
+.with-tooltip:hover:before {
 	opacity: 1;
 	visibility: visible;
 }
@@ -264,6 +265,8 @@ a.nav-text:active {
 
 .nav-version-menu li {
   padding: 5px 10px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .nav-version-label {
@@ -293,8 +296,18 @@ a.nav-text:active {
 	display: flex;
 }
 
-.nav-version-pdf-download-icon {
-	margin-right: 0.3em;
+.nav-version-pdf-download-link {
+  position: relative;
+  display: inline-block;
+	font-weight: 700;
+  text-decoration: underline;
+}
+
+.nav-version-pdf-download-link:before {
+  content:attr(data-action);
+	width: 140px;
+  text-align: center;
+	right: -15px;
 }
 
 @media screen and (min-width: 1024px) {

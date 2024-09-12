@@ -6,7 +6,11 @@
     home: 'Home',
     currentVersion: 'Current version',
     previousVersions: 'Previous versions',
+    previousVersion: 'Previous version',
     prereleaseVersions: 'Prerelease versions',
+    noVersion: "No version",
+    noVersionBrief: "n/v",
+    download: "Download PDF version"
   }
 
   var SECT_CLASS_RX = /^sect(\d)$/
@@ -20,10 +24,9 @@
       window.addEventListener('resize', fitNav)
     }
     relativize = relativize.bind(null, page.url) // eslint-disable-line no-func-assign
-    document.querySelector('.nav-tree-toggle[data-action=collapse]')
-      ?.addEventListener('click', collapseAllItems)
-    document.querySelector('.nav-tree-toggle[data-action=expand]')
-      ?.addEventListener('click', expandAllItems)
+    document.querySelector('.nav-tree-toggle')
+    document.querySelector('.nav-tree-toggle')
+      ?.addEventListener('click', (ev) => ev.target.checked ? collapseAllItems(ev) : expandAllItems(ev))
     var navGroups = createElement('.nav-groups.scrollbar')
     reshapeNavData(navData).groups.forEach(function (groupData) {
       var navGroup = createElement('.nav-group')
@@ -249,7 +252,9 @@
     }
     navTitle.appendChild(navLink)
     navToggler && navTitle.appendChild(navToggler)
-    if (!componentData.unversioned) navTitle.appendChild(createNavVersionDropdown(navItem, componentData, page))
+    if (componentData.name !== "home") {
+      navTitle.appendChild(createNavVersionDropdown(navItem, componentData, page))
+    }
     return navTitle
   }
 
@@ -280,20 +285,26 @@
         : versions[0]
     var navVersionDropdown = createElement('.nav-version-dropdown')
     navVersionDropdown.addEventListener('click', trapEvent)
-    var navVersionButton = createElement('button.button.nav-version-button')
+    var navVersionButton = createElement('button.button.nav-version-button.with-tooltip')
     var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
     var activeDisplayVersion = componentData.versions[activeVersion].displayVersion
-    navVersionButton.setAttribute('data-display', 
-      `${activeVersion === currentVersionData.version ? _.currentVersion : _.previousVersions} ${activeVersion}`)
+    if (componentData.unversioned) {
+      navVersionButton.setAttribute('data-display', _.noVersion);
+    } else {
+      navVersionButton.setAttribute('data-display', 
+        `${activeVersion === currentVersionData.version ? _.currentVersion : _.previousVersion} ${activeVersion}`)
+    }
     navVersionButton.appendChild(
-      createElement('span.nav-version', { dataset: { version: activeVersion } }, activeDisplayVersion)
+      createElement('span.nav-version', { dataset: { version: activeVersion } }, componentData.unversioned ? _.noVersionBrief : activeDisplayVersion)
     )
     if (page.navVersionIconId) {
       navVersionButton.appendChild(createSvgElement('.icon.nav-version-icon', '#' + page.navVersionIconId))
     }
     var navVersionMenu = createElement('ul.nav-version-menu')
     versions.reduce(function (lastVersionData, versionData) {
-      if (versionData === currentVersionData) {
+      if (componentData.unversioned) {
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.noVersion))
+      } else if (versionData === currentVersionData) {
         navVersionMenu.appendChild(createElement('li.nav-version-label', _.currentVersion))
       } else if (versionData.prerelease) {
         if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', _.prereleaseVersions))
@@ -302,17 +313,19 @@
       }
       var versionDataset = { version: versionData.version }
       navVersionMenu
-        .appendChild(createElement('li.nav-version-option', { dataset: versionDataset }, versionData.displayVersion))
+        .appendChild(createElement('li.nav-version-option', { dataset: versionDataset }, componentData.unversioned ? "..." : versionData.displayVersion))
         .addEventListener('click', selectVersion.bind(navVersionMenu, navItem, componentData, page))
-       var downloadPdfBlock = createElement('div.nav-version-pdf-block')
-      var downloadPdfLink = createElement('a.nav-version-pdf-download-link')
-      downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${versionData.version}/${componentData.title}.pdf`);
-      downloadPdfLink.setAttribute("download", componentData.title);
-      downloadPdfLink.innerText = "Скачать pdf версии"
-      var downloadPdfIcon = createSvgElement('.icon.nav-version-pdf-download-icon', '#' + "icon-nav-component-system")
-      downloadPdfBlock.appendChild(downloadPdfIcon)
-      downloadPdfBlock.appendChild(downloadPdfLink)
-      navVersionMenu.appendChild(downloadPdfBlock)
+      var downloadPdfLink = createElement('a.nav-version-pdf-download-link.with-tooltip')
+      var pdfUrlTitle = componentData.title && componentData.title.toLowerCase().replaceAll(" ", "-")
+      if (versionData.version) {
+        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${versionData.version}/${pdfUrlTitle}.pdf`)
+      } else {
+        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${pdfUrlTitle}.pdf`)
+      }
+      downloadPdfLink.setAttribute("download", componentData.title)
+      downloadPdfLink.innerText = "PDF"
+      downloadPdfLink.setAttribute("data-action", _.download)
+      navVersionMenu.lastChild.appendChild(downloadPdfLink)
       return versionData
     }, undefined)
     navVersionButton.addEventListener('click', toggleVersionMenu.bind(navVersionMenu))
@@ -379,7 +392,7 @@
       versionData = componentData.versions[selectedVersion]
       navVersion.textContent = versionData.displayVersion
       navVersionButton.setAttribute('data-display', 
-      `${selectedVersion === getCurrentVersion(componentData).version ? _.currentVersion : _.previousVersions} ${selectedVersion}`)
+      `${selectedVersion === getCurrentVersion(componentData).version ? _.currentVersion : _.previousVersion} ${selectedVersion}`)
     } else {
       selectedVersion = navVersion.dataset.version
       versionData = componentData.versions[selectedVersion]
@@ -585,7 +598,7 @@
   }
 
   function relativize (from, to) {
-    if (!(from && to.charAt() === '/')) return to
+    if (!(from && to?.charAt() === '/')) return to
     var hash = ''
     var hashIdx = to.indexOf('#')
     if (~hashIdx) {
@@ -644,6 +657,7 @@
     var collapse = function(item) {
         item.querySelectorAll('.nav-item').forEach(
           function(i) {
+            if (i.querySelector('[aria-current="page"]')) return;
             i.classList.remove('is-active')
         })
     }
