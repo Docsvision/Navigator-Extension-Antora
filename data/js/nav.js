@@ -272,7 +272,7 @@
     var versions = Object.values(componentData.versions)
     var currentVersionData = getCurrentVersion(componentData)
     var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
-    return activeVersion || versions[0]
+    return activeVersion || versions[0].version
   }
 
   function createNavVersionDropdown (navItem, componentData, page) {
