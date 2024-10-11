@@ -33,6 +33,10 @@
       if (groupData.title) navGroup.appendChild(createNavTitleForGroup(groupData))
       navGroup.appendChild(createNavListForGroup(groupData, page))
       navGroups.appendChild(navGroup)
+      if (groupData.components.find(c => c.name === 'home')) {
+        const navItemToggleContainer = document.querySelector('.nav-tree-toggle-container');
+        navGroup.appendChild(navItemToggleContainer);
+      }
     })
     navGroups.addEventListener('mousedown', inhibitSelectionOnSecondClick)
     getNavGroupsBottom = getNavGroupsBottom.bind(navGroups) // eslint-disable-line no-func-assign

@@ -127,6 +127,10 @@ a.nav-text:active {
   font-weight: bold;
 }
 
+.nav-list .nav-title .nav-item-toggle {
+  margin-top: 0.2em;
+}
+
 .nav-list [aria-current=page] {
   color: #4c22f7;
   font-weight: normal;
@@ -202,6 +206,7 @@ a.nav-text:active {
   height: 1.25rem;
   opacity: 0.75;
   padding: 0 0 0 0.5em;
+  margin-top: 0.2em;
 }
 
 .with-tooltip:before {
