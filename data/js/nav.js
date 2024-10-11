@@ -2,27 +2,56 @@
 ;(function () {
   'use strict'
 
+  var _ = {
+    home: 'Home',
+    currentVersion: 'Current version',
+    previousVersions: 'Previous versions',
+    previousVersion: 'Previous version',
+    prereleaseVersions: 'Prerelease versions',
+    noVersion: "No version",
+    noVersionBrief: "n/v",
+    download: "Download PDF version"
+  }
+
+  var SECT_CLASS_RX = /^sect(\d)$/
+
   function buildNav (navData, nav, page) {
     if (!page) return
+    loadStrings()
     if (nav.classList.contains('fit')) {
       ;(fitNav = fitNav.bind(nav))() // eslint-disable-line no-func-assign
       window.addEventListener('scroll', fitNav)
       window.addEventListener('resize', fitNav)
     }
     relativize = relativize.bind(null, page.url) // eslint-disable-line no-func-assign
+    document.querySelector('.nav-tree-toggle')
+    document.querySelector('.nav-tree-toggle')
+      ?.addEventListener('click', (ev) => ev.target.checked ? collapseAllItems(ev) : expandAllItems(ev))
     var navGroups = createElement('.nav-groups.scrollbar')
     reshapeNavData(navData).groups.forEach(function (groupData) {
       var navGroup = createElement('.nav-group')
       if (groupData.title) navGroup.appendChild(createNavTitleForGroup(groupData))
       navGroup.appendChild(createNavListForGroup(groupData, page))
       navGroups.appendChild(navGroup)
+      if (groupData.components.find(c => c.name === 'home')) {
+        const navItemToggleContainer = document.querySelector('.nav-tree-toggle-container');
+        navGroup.appendChild(navItemToggleContainer);
+      }
     })
     navGroups.addEventListener('mousedown', inhibitSelectionOnSecondClick)
     getNavGroupsBottom = getNavGroupsBottom.bind(navGroups) // eslint-disable-line no-func-assign
     closeVersionMenu = closeVersionMenu.bind(nav) // eslint-disable-line no-func-assign
     nav.addEventListener('click', closeVersionMenu)
     nav.appendChild(navGroups)
-    scrollToCurrentPageItem(navGroups, page.scope)
+    let scrolled
+    let firstInternalNavLink = nav.querySelector('a.nav-text[href^="#"]')
+    if (firstInternalNavLink) {
+      if (!nav.querySelector('a.nav-text.is-initial')) firstInternalNavLink.classList.add('is-initial')
+      onHashChange = onHashChange.bind(nav) // eslint-disable-line no-func-assign
+      window.location.hash && (scrolled = onHashChange())
+      window.addEventListener('hashchange', onHashChange)
+    }
+    scrolled || scrollToCurrentPageItem(navGroups, page.scope)
   }
 
   function extractNavData (source) {
@@ -130,8 +159,8 @@
     if (found) return components
     return components.concat({
       name: 'home',
-      title: 'На главную',
-      versions: [{ version: '', sets: [{ content: 'На главную', url: homeUrl }] }],
+      title: _.home,
+      versions: [{ version: '', sets: [{ content: _.home, url: homeUrl }] }],
     })
   }
 
@@ -159,8 +188,13 @@
     }, {})
   }
 
-   function createNavTitleForGroup (groupData) {
-    return createElement('h3.nav-title', groupData.title)
+  function createNavTitleForGroup (groupData) {
+    var navTitle = createElement('h3.nav-title', groupData.title)
+    if (groupData.iconId) {
+      navTitle.classList.add('has-icon')
+      navTitle.insertBefore(createSvgElement('.icon.nav-group-icon', '#' + groupData.iconId), navTitle.firstChild)
+    }
+    return navTitle
   }
 
   function createNavListForGroup (groupData, page) {
@@ -192,25 +226,57 @@
     return navItem
   }
 
-  function createNavTitle (navItem, componentData, page) {
+  function createNavTitle (navItem, componentData, page, url) {
     var navTitle = createElement('.nav-title')
     var navLink = createElement('a.link.nav-text', componentData.title)
+    var navUrl = componentData.unversioned
+      ? componentData.versions[''].nav.url
+      : componentData.versions[getActiveVersion(componentData, page)].nav.url
+    var navToggler
     if (componentData.name === 'home') {
       var homeUrl = componentData.nav.url
       if ((navLink.href = relativize(homeUrl)) === relativize(page.url)) {
         navItem.classList.add('is-active')
+        navLink.classList.add('is-initial')
         navLink.setAttribute('aria-current', 'page')
       }
     } else {
-      navLink.addEventListener('click', toggleNav.bind(navItem, componentData, false, page))
+      navToggler = createElement('button.nav-item-toggle')
+      if (page.navItemToggleIconId) {
+        navToggler.appendChild(createSvgElement('.icon.nav-item-toggle-icon', '#' + page.navItemToggleIconId))
+      }
+      if (navUrl) { 
+        navLink.href = relativize(navUrl) 
+      }
+      navToggler.addEventListener('click', toggleNav.bind(navItem, componentData, false, page))
     }
     if (componentData.iconId) {
       navTitle.classList.add('has-icon')
       navLink.insertBefore(createSvgElement('.icon.nav-icon', '#' + componentData.iconId), navLink.firstChild)
     }
     navTitle.appendChild(navLink)
-    if (!componentData.unversioned) navTitle.appendChild(createNavVersionDropdown(navItem, componentData, page))
+    navToggler && navTitle.appendChild(navToggler)
+    if (componentData.name !== "home") {
+      navTitle.appendChild(createNavVersionDropdown(navItem, componentData, page))
+    }
     return navTitle
+  }
+
+  function getCurrentVersion(componentData) {
+    var versions = Object.values(componentData.versions)
+      var currentVersionData =
+        versions.length > 1
+          ? versions.find(function (version) {
+            return !version.prerelease
+          }) || versions[0]
+          : versions[0]
+    return currentVersionData;
+  }
+  function getActiveVersion(componentData, page) {
+    var versions = Object.values(componentData.versions)
+    var currentVersionData = getCurrentVersion(componentData)
+    var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
+    return activeVersion || versions[0].version
   }
 
   function createNavVersionDropdown (navItem, componentData, page) {
@@ -223,28 +289,47 @@
         : versions[0]
     var navVersionDropdown = createElement('.nav-version-dropdown')
     navVersionDropdown.addEventListener('click', trapEvent)
-    var navVersionButton = createElement('button.button.nav-version-button')
+    var navVersionButton = createElement('button.button.nav-version-button.with-tooltip')
     var activeVersion = componentData.name === page.component ? page.version : currentVersionData.version
     var activeDisplayVersion = componentData.versions[activeVersion].displayVersion
+    if (componentData.unversioned) {
+      navVersionButton.setAttribute('data-display', _.noVersion);
+    } else {
+      navVersionButton.setAttribute('data-display', 
+        `${activeVersion === currentVersionData.version ? _.currentVersion : _.previousVersion} ${activeVersion}`)
+    }
     navVersionButton.appendChild(
-      createElement('span.nav-version', { dataset: { version: activeVersion } }, activeDisplayVersion)
+      createElement('span.nav-version', { dataset: { version: activeVersion } }, componentData.unversioned ? _.noVersionBrief : activeDisplayVersion)
     )
     if (page.navVersionIconId) {
       navVersionButton.appendChild(createSvgElement('.icon.nav-version-icon', '#' + page.navVersionIconId))
     }
     var navVersionMenu = createElement('ul.nav-version-menu')
     versions.reduce(function (lastVersionData, versionData) {
-      if (versionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Последняя версия'))
+      if (componentData.unversioned) {
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.noVersion))
+      } else if (versionData === currentVersionData) {
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.currentVersion))
       } else if (versionData.prerelease) {
-        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предрелизные версии'))
+        if (!lastVersionData) navVersionMenu.appendChild(createElement('li.nav-version-label', _.prereleaseVersions))
       } else if (lastVersionData === currentVersionData) {
-        navVersionMenu.appendChild(createElement('li.nav-version-label', 'Предыдущие версии'))
+        navVersionMenu.appendChild(createElement('li.nav-version-label', _.previousVersions))
       }
       var versionDataset = { version: versionData.version }
       navVersionMenu
-        .appendChild(createElement('li.nav-version-option', { dataset: versionDataset }, versionData.displayVersion))
+        .appendChild(createElement('li.nav-version-option', { dataset: versionDataset }, componentData.unversioned ? "..." : versionData.displayVersion))
         .addEventListener('click', selectVersion.bind(navVersionMenu, navItem, componentData, page))
+      var downloadPdfLink = createElement('a.nav-version-pdf-download-link.with-tooltip')
+      var pdfUrlTitle = componentData.title && componentData.title.toLowerCase().replaceAll(" ", "-")
+      if (versionData.version) {
+        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${versionData.version}/${pdfUrlTitle}.pdf`)
+      } else {
+        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${pdfUrlTitle}.pdf`)
+      }
+      downloadPdfLink.setAttribute("download", componentData.title)
+      downloadPdfLink.innerText = "PDF"
+      downloadPdfLink.setAttribute("data-action", _.download)
+      navVersionMenu.lastChild.appendChild(downloadPdfLink)
       return versionData
     }, undefined)
     navVersionButton.addEventListener('click', toggleVersionMenu.bind(navVersionMenu))
@@ -257,10 +342,13 @@
     var navList = createElement('ul.nav-list')
     if (version) navList.dataset.version = version
     navEntryData.items.forEach(function (navItemData) {
+      var itemIsAnnotation = navItemData.url && navItemData.url.includes('index.html')
+      var itemNoChildren = !navItemData.items || navItemData.items.length === 0
       if (navItemData.name) {
         navList.appendChild(createNavItemForComponent(navItemData, page))
         return
       }
+      if (itemIsAnnotation && itemNoChildren) return
       var navItem = createElement('li.nav-item')
       if (navItemData.url) {
         var navLink = createElement('a.link.nav-text', { href: relativize(navItemData.url) }, navItemData.content)
@@ -273,6 +361,7 @@
             el.classList.add('is-active')
           })
           navItem.classList.add('is-active')
+          navLink.classList.add('is-initial')
           navLink.setAttribute('aria-current', 'page')
         }
         navItem.appendChild(navLink)
@@ -297,25 +386,30 @@
   function ensureNavList (navItem, componentData, selectedVersion, page) {
     if (componentData.unversioned) {
       if (!navItem.querySelector('.nav-list')) navItem.appendChild(createNavList(componentData.nav, page))
+      return
+    }
+    var versionData
+    var navVersion = navItem.querySelector('.nav-version')
+    var navVersionButton = navItem.querySelector('.nav-version-button')
+    if (selectedVersion) {
+      navVersion.dataset.version = selectedVersion
+      versionData = componentData.versions[selectedVersion]
+      navVersion.textContent = versionData.displayVersion
+      navVersionButton.setAttribute('data-display', 
+      `${selectedVersion === getCurrentVersion(componentData).version ? _.currentVersion : _.previousVersion} ${selectedVersion}`)
     } else {
-      var versionData
-      var navVersion = navItem.querySelector('.nav-version')
-      if (selectedVersion) {
-        navVersion.dataset.version = selectedVersion
-        versionData = componentData.versions[selectedVersion]
-        navVersion.textContent = versionData.displayVersion
-      } else {
-        selectedVersion = navVersion.dataset.version
-        versionData = componentData.versions[selectedVersion]
-      }
-      var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
-      var firstNavList = navItem.querySelector('.nav-list[data-version]')
-      if (navList) {
-        if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
-      } else {
-        navList = createNavList(versionData.nav, page, selectedVersion)
-        firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
-      }
+      selectedVersion = navVersion.dataset.version
+      versionData = componentData.versions[selectedVersion]
+    }
+    var navList = navItem.querySelector('.nav-list[data-version="' + selectedVersion + '"]')
+    var navTitle = navItem.querySelector('.nav-title')
+    var firstNavList = navItem.querySelector('.nav-list[data-version]')
+    if (navList) {
+      if (navList !== firstNavList) navItem.insertBefore(navList, firstNavList)
+    } else {
+      updateNavTitle(navTitle, componentData, selectedVersion)
+      navList = createNavList(versionData.nav, page, selectedVersion)
+      firstNavList ? navItem.insertBefore(navList, firstNavList) : navItem.appendChild(navList)
     }
   }
 
@@ -342,6 +436,14 @@
     if (innerHTML) element.innerHTML = innerHTML
     return element
   }
+
+   function updateNavTitle(navTitle, componentData, selectedVersion) {
+    if (!selectedVersion) return
+    var navUrl = componentData.versions[selectedVersion].nav.url
+    var navLink = navTitle.querySelector('.link.nav-text');
+    navLink.href = relativize(navUrl);
+  }
+
 
   function createSvgElement (attrs, useRef) {
     var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -414,12 +516,11 @@
   }
 
   function hideVersionMenu (menu, force) {
-    if (force || menu.classList.contains('is-active')) {
-      menu.classList.add('is-clipped')
-      menu.style.maxHeight = 0
-      menu.classList.remove('is-active')
-      return true
-    }
+    if (!(force || menu.classList.contains('is-active'))) return
+    menu.classList.add('is-clipped')
+    menu.style.maxHeight = 0
+    menu.classList.remove('is-active')
+    return true
   }
 
   function trapEvent (e) {
@@ -440,9 +541,51 @@
     if (!scope) return
     var target = (scope.querySelector('[aria-current=page]') || { parentNode: scope.previousElementSibling }).parentNode
     var containerRect = container.getBoundingClientRect()
-    var midpoint = (containerRect.height - containerRect.top) * 0.5
-    var adjustment = target.offsetTop + target.offsetHeight * 0.5 - midpoint
+    var midpoint = containerRect.height * 0.5
+    var offset = target.offsetTop + target.offsetHeight * 0.5
+    while (container.contains((target = target.offsetParent))) offset += target.offsetTop
+    var adjustment = offset - midpoint
     if (adjustment > 0) container.scrollTop = adjustment
+  }
+
+  function onHashChange () {
+    var navLink
+    var hash = window.location.hash
+    if (hash) {
+      if (hash.indexOf('%')) hash = decodeURIComponent(hash)
+      navLink = this.querySelector('a.nav-text[href="' + hash + '"]')
+      if (!navLink) {
+        var targetNode = document.getElementById(hash.slice(1))
+        if (targetNode) {
+          var current = targetNode
+          var ceiling = document.querySelector('article.doc')
+          while ((current = current.parentNode) && current !== ceiling) {
+            var id = current.id
+            // NOTE: look for section heading
+            if (!id && (id = SECT_CLASS_RX.test(current.className))) id = (current.firstElementChild || {}).id
+            if (id && (navLink = this.querySelector('a.nav-text[href="#' + id + '"]'))) break
+          }
+        }
+      }
+    }
+    if (!(navLink || (navLink = this.querySelector('a.nav-text.is-initial')))) return
+    var currentPageLink = this.querySelector('[aria-current=page]')
+    if (navLink === currentPageLink) return
+    if (currentPageLink) toggleActivePath(this, currentPageLink, 'remove')
+    toggleActivePath(this, navLink, 'add')
+    scrollToCurrentPageItem(this.querySelector('.nav-groups'), navLink.parentNode)
+    return true
+  }
+
+  function toggleActivePath (nav, navLink, action) {
+    navLink[action === 'add' ? 'setAttribute' : 'removeAttribute']('aria-current', 'page')
+    var navItem = navLink.parentNode
+    navItem.classList[action]('is-active')
+    var ancestor = navItem.parentNode
+    while (ancestor !== nav) {
+      if (ancestor.tagName === 'LI' && ancestor.classList.contains('nav-item')) ancestor.classList[action]('is-active')
+      ancestor = ancestor.parentNode
+    }
   }
 
   function inhibitSelectionOnSecondClick (e) {
@@ -459,47 +602,42 @@
   }
 
   function relativize (from, to) {
-    if (!(from && to.charAt() === '/')) return to
+    if (!(from && to?.charAt() === '/')) return to
     var hash = ''
     var hashIdx = to.indexOf('#')
     if (~hashIdx) {
       hash = to.substr(hashIdx)
       to = to.substr(0, hashIdx)
     }
-    if (from === to) {
-      return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
-    } else {
-      return (
-        (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
-        (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
-      )
-    }
+    if (from === to) return hash || (to.charAt(to.length - 1) === '/' ? './' : to.substr(to.lastIndexOf('/') + 1))
+    return (
+      (computeRelativePath(from.slice(0, from.lastIndexOf('/')), to) || '.') +
+      (to.charAt(to.length - 1) === '/' ? '/' + hash : hash)
+    )
   }
 
   function computeRelativePath (from, to) {
     var fromParts = trimArray(from.split('/'))
     var toParts = trimArray(to.split('/'))
-    for (var i = 0, l = Math.min(fromParts.length, toParts.length), sharedPathLength = l; i < l; i++) {
-      if (fromParts[i] !== toParts[i]) {
-        sharedPathLength = i
-        break
-      }
+    var sharedPathLength = Math.min(fromParts.length, toParts.length)
+    for (var i = 0; i < sharedPathLength; i++) {
+      if (fromParts[i] === toParts[i]) continue
+      sharedPathLength = i
+      break
     }
     var outputParts = []
-    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) {
-      outputParts.push('..')
-    }
+    for (var remain = fromParts.length - sharedPathLength; remain > 0; remain--) outputParts.push('..')
     return outputParts.concat(toParts.slice(sharedPathLength)).join('/')
   }
 
   function trimArray (arr) {
     var start = 0
-    var length = arr.length
-    for (; start < length; start++) {
+    var end = arr.length
+    for (; start < end; start++) {
       if (arr[start]) break
     }
-    if (start === length) return []
-    for (var end = length; end > 0; end--) {
+    if (start === end) return []
+    for (; end > 0; end--) {
       if (arr[end - 1]) break
     }
     return arr.slice(start, end)
@@ -509,5 +647,46 @@
     return Array.isArray(val) ? val : [val]
   }
 
+  function loadStrings () {
+    var dataset = (document.getElementById('navigator-script') || {}).dataset
+    if (!dataset) return
+    Object.keys(_).forEach(function (key) {
+      _[key] = dataset['t' + key.charAt().toUpperCase() + key.slice(1)] || _[key]
+    })
+  }
+
+  function collapseAllItems(ev) {
+    ev.stopPropagation()
+    var nav = document.querySelector(".nav")
+    var collapse = function(item) {
+        item.querySelectorAll('.nav-item').forEach(
+          function(i) {
+            if (i.querySelector('[aria-current="page"]')) return;
+            i.classList.remove('is-active')
+        })
+    }
+    collapse(nav)
+  }
+
+  function expandAllItems(ev) {
+    ev.stopPropagation()
+    const navItemToggleContainer = document.querySelector('.nav-tree-toggle-container')
+    navItemToggleContainer.classList.add("process")
+    setTimeout(() => {
+      var nav = document.querySelector(".nav")
+      var expand = function(item) {
+        var items = item.querySelectorAll('.nav-item').forEach(
+          function(i) {
+            if(!i.classList.contains('is-active')) {
+              i.querySelector('.nav-item-toggle')?.click()
+            }
+            expand(i)
+        })
+      }
+      expand(nav)
+      navItemToggleContainer.classList.remove("process")
+    }, 100)
+  }
+  
   buildNav(extractNavData(window), document.querySelector('.nav'), getPage())
 })()

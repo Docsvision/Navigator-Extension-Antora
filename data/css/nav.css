@@ -54,7 +54,7 @@ a.nav-text:active {
   color: #000;
   display: flex;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: bold;
   margin: 2em 0 0;
 }
 
@@ -83,6 +83,7 @@ a.nav-text:active {
   display: flex;
   justify-content: space-between;
   position: relative;
+  padding-left: 1em;
 }
 
 .nav-list .nav-title .nav-text {
@@ -94,7 +95,7 @@ a.nav-text:active {
 }
 
 .nav-list .nav-title.has-icon + .nav-list {
-  margin-left: 1.5em;
+  margin-left: 2em;
 }
 
 .nav-icon {
@@ -123,7 +124,11 @@ a.nav-text:active {
 }
 
 .nav-list .nav-title .nav-text {
-  font-weight: 500;
+  font-weight: bold;
+}
+
+.nav-list .nav-title .nav-item-toggle {
+  margin-top: 0.2em;
 }
 
 .nav-list [aria-current=page] {
@@ -177,7 +182,8 @@ a.nav-text:active {
   transition: transform 0.15s ease-in-out;
 }
 
-.nav-item.is-active > .nav-item-toggle {
+.nav-item.is-active > .nav-item-toggle,
+.nav-item.is-active > .nav-title .nav-item-toggle {
   transform: rotate(90deg) translateY(-0.025em);
   -moz-transform: rotate(90deg);
 }
@@ -187,6 +193,7 @@ a.nav-text:active {
 }
 
 .nav-version-button {
+  position:relative;
   align-items: center;
   background: transparent;
   border: 0;
@@ -199,6 +206,28 @@ a.nav-text:active {
   height: 1.25rem;
   opacity: 0.75;
   padding: 0 0 0 0.5em;
+  margin-top: 0.2em;
+}
+
+.with-tooltip:before {
+	content: attr(data-display);
+	position: absolute;
+	right: 0;
+	top: 0;
+  transform: translateY(calc(-100% - 5px));
+  width: 150px;
+	padding: 5px 5px;
+	background-color: #271f47;
+	color: whitesmoke;
+	border-radius: 5px;
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.with-tooltip:hover:before {
+	opacity: 1;
+	visibility: visible;
 }
 
 .nav-version-button .nav-version-icon {
@@ -241,10 +270,12 @@ a.nav-text:active {
 
 .nav-version-menu li {
   padding: 5px 10px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .nav-version-label {
-  font-weight: 500;
+  font-weight: bold;
 }
 
 .nav-version-option + .nav-version-label {
@@ -263,6 +294,25 @@ a.nav-text:active {
 
 .nav-version-option:active {
   color: var(--link_hover-font-color);
+}
+
+.nav-version-pdf-block {
+	padding: 0 0.3em 0.3em 0.5em;
+	display: flex;
+}
+
+.nav-version-pdf-download-link {
+  position: relative;
+  display: inline-block;
+	font-weight: 700;
+  text-decoration: underline;
+}
+
+.nav-version-pdf-download-link:before {
+  content:attr(data-action);
+	width: 140px;
+  text-align: center;
+	right: -15px;
 }
 
 @media screen and (min-width: 1024px) {
