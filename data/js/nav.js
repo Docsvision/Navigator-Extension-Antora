@@ -670,8 +670,11 @@
 
   function expandAllItems(ev) {
     ev.stopPropagation()
-    var nav = document.querySelector(".nav")
-    var expand = function(item) {
+    const navItemToggleContainer = document.querySelector('.nav-tree-toggle-container')
+    navItemToggleContainer.classList.add("process")
+    setTimeout(() => {
+      var nav = document.querySelector(".nav")
+      var expand = function(item) {
         var items = item.querySelectorAll('.nav-item').forEach(
           function(i) {
             if(!i.classList.contains('is-active')) {
@@ -679,8 +682,10 @@
             }
             expand(i)
         })
-    }
-    expand(nav)
+      }
+      expand(nav)
+      navItemToggleContainer.classList.remove("process")
+    }, 100)
   }
   
   buildNav(extractNavData(window), document.querySelector('.nav'), getPage())
