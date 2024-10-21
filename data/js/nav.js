@@ -322,9 +322,9 @@
       var downloadPdfLink = createElement('a.nav-version-pdf-download-link.with-tooltip')
       var pdfUrlTitle = componentData.title && componentData.title.toLowerCase().replaceAll(" ", "-")
       if (versionData.version) {
-        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${versionData.version}/${pdfUrlTitle}.pdf`)
+        downloadPdfLink.href = relativize(`/${componentData.name}/${versionData.version}/${pdfUrlTitle}.pdf`)
       } else {
-        downloadPdfLink.href = relativize(`/pdfs/${componentData.name}/${pdfUrlTitle}.pdf`)
+        downloadPdfLink.href = relativize(`/${componentData.name}/${pdfUrlTitle}.pdf`)
       }
       downloadPdfLink.setAttribute("download", componentData.title)
       downloadPdfLink.innerText = "PDF"
